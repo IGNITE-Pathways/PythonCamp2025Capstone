@@ -10,9 +10,14 @@ pygame.init()
 # Game Variables (teaching variables and data types)
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-GAME_TITLE = "Simple Racing Game"
+GAME_TITLE = "Batman Racing Game"
 IS_RUNNING = True
 FPS = 60
+
+# Load Batman image
+BATMAN_IMAGE = pygame.image.load("batman.png")
+BATMAN_IMAGE = pygame.transform.scale(BATMAN_IMAGE, (30, 30))  # Scale to match game size
+
 
 # Colors (teaching lists and tuples)
 COLORS = [
@@ -131,15 +136,16 @@ class Track:
         return False
 
 class Car:
-    """Class to represent the player's car"""
+    """Class to represent the Batman character"""
     def __init__(self, x, y, color):
         self.x = x
         self.y = y
         self.width = 30
-        self.height = 15
+        self.height = 30
         self.color = color
         self.speed = 0
-        self.angle = 0
+        self.angle = 0  # Start at 0 since Batman is already facing up in the image
+        self.image = BATMAN_IMAGE
     
     def move(self, track):
         """Handle car movement and collision"""
@@ -150,27 +156,32 @@ class Car:
         old_x = self.x
         old_y = self.y
         
-        # Rotation (reduced from 5 to 3 degrees per press)
+        # Rotation (3 degrees per press)
         if keys[pygame.K_LEFT]:
-            self.angle -= 3
+            self.angle += 2  # Reduced from 3 to 2 degrees
         if keys[pygame.K_RIGHT]:
-            self.angle += 3
+            self.angle -= 2  # Reduced from 3 to 2 degrees
         
-        # Forward/Backward movement (reduced acceleration from 0.2 to 0.1, max speed from 5 to 3)
+        # Forward/Backward movement (reduced speed and acceleration)
         if keys[pygame.K_UP]:
-            self.speed = min(self.speed + 0.1, 3)
+            self.speed = min(self.speed + 0.1, 3)  # Reduced acceleration and max speed
         elif keys[pygame.K_DOWN]:
-            self.speed = max(self.speed - 0.1, -1.5)  # Reduced reverse speed from -2 to -1.5
+            self.speed = max(self.speed - 0.1, -1.5)  # Reduced reverse speed
         else:
-            self.speed *= 0.95  # Friction
+            self.speed *= 0.95  # Slightly more friction for better control
         
-        # Apply movement
-        self.x += math.cos(math.radians(self.angle)) * self.speed
-        self.y += math.sin(math.radians(self.angle)) * self.speed
+        # Apply movement - angle is relative to upward direction (0 degrees)
+        angle_rad = math.radians(-self.angle - 90)  # Convert to radians and adjust for orientation
+        self.x += math.cos(angle_rad) * self.speed  # Use cosine for x movement
+        self.y += math.sin(angle_rad) * self.speed  # Use sine for y movement
         
-        # Create car rectangle for collision detection
-        car_rect = pygame.Rect(self.x - self.width/2, self.y - self.height/2, 
-                             self.width, self.height)
+        # Create slightly smaller collision rectangle for more forgiving collisions
+        car_rect = pygame.Rect(
+            self.x - self.width/2.2,
+            self.y - self.height/2.2,
+            self.width * 0.9,
+            self.height * 0.9
+        )
         
         # Check collision with track
         if track.check_collision(car_rect):
@@ -180,28 +191,13 @@ class Car:
             self.speed = 0
     
     def draw(self):
-        """Draw the car on the screen"""
-        # Calculate car corners for rotation
-        cos_angle = math.cos(math.radians(self.angle))
-        sin_angle = math.sin(math.radians(self.angle))
-        
-        # Car corners relative to center
-        corners = [
-            (-self.width/2, -self.height/2),
-            (self.width/2, -self.height/2),
-            (self.width/2, self.height/2),
-            (-self.width/2, self.height/2)
-        ]
-        
-        # Rotate and translate corners
-        rotated_corners = []
-        for corner_x, corner_y in corners:
-            rotated_x = corner_x * cos_angle - corner_y * sin_angle + self.x
-            rotated_y = corner_x * sin_angle + corner_y * cos_angle + self.y
-            rotated_corners.append((rotated_x, rotated_y))
-        
-        # Draw car
-        pygame.draw.polygon(screen, self.color, rotated_corners)
+        """Draw Batman on the screen"""
+        # Rotate the Batman image
+        rotated_image = pygame.transform.rotate(self.image, self.angle)
+        # Get the rect for positioning
+        rect = rotated_image.get_rect(center=(self.x, self.y))
+        # Draw the image
+        screen.blit(rotated_image, rect)
 
 def load_high_scores():
     """Load high scores from file"""
@@ -307,11 +303,11 @@ while IS_RUNNING:
             if game_state == MENU:
                 if event.key == pygame.K_1:
                     current_track = Track(TRACKS[0])
-                    player = Car(125, 75, COLORS[2])  # Red car at track start
+                    player = Car(95, 95, COLORS[2])  # Adjusted to be clearly inside track
                     game_state = RACING
                 elif event.key == pygame.K_2:
                     current_track = Track(TRACKS[1])
-                    player = Car(125, 75, COLORS[2])  # Red car at track start
+                    player = Car(95, 95, COLORS[2])  # Adjusted to be clearly inside track
                     game_state = RACING
                 elif event.key == pygame.K_ESCAPE:
                     IS_RUNNING = False
